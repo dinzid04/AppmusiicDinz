@@ -78,11 +78,13 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.OndemandVideo
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonOutline
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Schedule
@@ -2039,12 +2041,13 @@ private fun LyricsSubViewContent(
             onToggleTranslation = onToggleTranslation,
             onToggleRomanization = onToggleRomanization,
             onSelectTranslationLanguage = onSelectTranslationLanguage,
+            showTopToolbar = false,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
         )
 
-        // Auto-Hide Bottom Controls + Clickable Underlined Provider Credit above Seek Bar
+        // Auto-Hide Bottom Controls + Globe & Translate Icons + Clickable Underlined Provider Credit above Seek Bar
         AnimatedVisibility(
             visible = controlsVisible,
             enter = fadeIn(tween(220)) + expandVertically(tween(240)),
@@ -2055,6 +2058,55 @@ private fun LyricsSubViewContent(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
             ) {
+                // Globe (Romaji) & Translate icon row matching redesign
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(
+                        onClick = onToggleRomanization,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(if (isRomanizationEnabled) ActiveHeartCoral.copy(alpha = 0.25f) else Color.Transparent)
+                            .testTag("lyrics_bottom_romaji_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Language,
+                            contentDescription = "Romaji",
+                            tint = if (isRomanizationEnabled) ActiveHeartCoral else Color.White.copy(alpha = 0.82f),
+                            modifier = Modifier.size(21.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onToggleTranslation,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(if (isTranslationEnabled) ActiveHeartCoral.copy(alpha = 0.25f) else Color.Transparent)
+                            .testTag("lyrics_bottom_translate_button")
+                    ) {
+                        if (isTranslatingLyrics) {
+                            CircularProgressIndicator(
+                                color = ActiveHeartCoral,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(17.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Translate,
+                                contentDescription = "Terjemahkan Lirik",
+                                tint = if (isTranslationEnabled) ActiveHeartCoral else Color.White.copy(alpha = 0.82f),
+                                modifier = Modifier.size(21.dp)
+                            )
+                        }
+                    }
+                }
+
                 val creditText = when {
                     isEmbeddedLyrics || lyricsData?.isEmbedded == true -> "Lirik Offline (Embedded .lrc)"
                     activeLyricsSource != null -> "Lirik oleh ${activeLyricsSource.displayName}"
@@ -2066,13 +2118,13 @@ private fun LyricsSubViewContent(
                     text = creditText,
                     fontFamily = PlusJakartaSans,
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.5.sp,
-                    color = Color.White.copy(alpha = 0.78f),
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.82f),
                     textDecoration = TextDecoration.Underline,
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
                         .clickable(onClick = onOpenProviderSelector)
-                        .padding(vertical = 6.dp)
+                        .padding(vertical = 4.dp)
                         .testTag("lyrics_provider_credit_button")
                 )
 

@@ -137,6 +137,15 @@ object AppSettings {
     val canvasOverCellular: StateFlow<Boolean> = _canvasOverCellular.asStateFlow()
     val animatedCoverCellular: StateFlow<Boolean> = _canvasOverCellular.asStateFlow()
 
+    private val _communitySectionRedesignEnabled = MutableStateFlow(true)
+    val communitySectionRedesignEnabled: StateFlow<Boolean> = _communitySectionRedesignEnabled.asStateFlow()
+
+    private val _quickPicksRedesignEnabled = MutableStateFlow(true)
+    val quickPicksRedesignEnabled: StateFlow<Boolean> = _quickPicksRedesignEnabled.asStateFlow()
+
+    private val _homeRedesignSectionsEnabled = MutableStateFlow(true)
+    val homeRedesignSectionsEnabled: StateFlow<Boolean> = _homeRedesignSectionsEnabled.asStateFlow()
+
     private val _signatureApiEnabled = MutableStateFlow(false)
     val signatureApiEnabled: StateFlow<Boolean> = _signatureApiEnabled.asStateFlow()
 
@@ -424,6 +433,9 @@ object AppSettings {
         _legacyMeshGradient.value = prefs.getBoolean("legacy_mesh_gradient", false)
         _animatedCanvas.value = prefs.getBoolean("animated_cover_art", true)
         _canvasOverCellular.value = prefs.getBoolean("animated_cover_cellular", false)
+        _communitySectionRedesignEnabled.value = prefs.getBoolean("community_section_redesign", true)
+        _quickPicksRedesignEnabled.value = prefs.getBoolean("quick_picks_redesign", true)
+        _homeRedesignSectionsEnabled.value = prefs.getBoolean("home_redesign_sections", true)
         _signatureApiEnabled.value = prefs.getBoolean("signature_api_enabled", false)
         _signatureApiUrl.value = prefs.getString("signature_api_url", "") ?: ""
         _syncedLyrics.value = prefs.getBoolean("synced_lyrics", true)
@@ -572,6 +584,21 @@ object AppSettings {
     }
 
     fun setAnimatedCoverCellular(v: Boolean) = setCanvasOverCellular(v)
+
+    fun setCommunitySectionRedesignEnabled(v: Boolean) {
+        _communitySectionRedesignEnabled.value = v
+        save { putBoolean("community_section_redesign", v) }
+    }
+
+    fun setQuickPicksRedesignEnabled(v: Boolean) {
+        _quickPicksRedesignEnabled.value = v
+        save { putBoolean("quick_picks_redesign", v) }
+    }
+
+    fun setHomeRedesignSectionsEnabled(v: Boolean) {
+        _homeRedesignSectionsEnabled.value = v
+        save { putBoolean("home_redesign_sections", v) }
+    }
 
     fun setSignatureApiEnabled(v: Boolean) {
         _signatureApiEnabled.value = v

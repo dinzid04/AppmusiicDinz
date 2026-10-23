@@ -38,6 +38,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
@@ -46,7 +47,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
@@ -141,6 +144,7 @@ fun BitChordSyncedLyricsPanel(
     onToggleTranslation: () -> Unit,
     onToggleRomanization: () -> Unit,
     onSelectTranslationLanguage: (String) -> Unit,
+    showTopToolbar: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var showLanguagePickerDialog by remember { mutableStateOf(false) }
@@ -169,14 +173,15 @@ fun BitChordSyncedLyricsPanel(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Top BitChord Lyrics Toolbar (Source Pill, Translate, Romanize, Offset, Sources Priority)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        if (showTopToolbar) {
+            // Top BitChord Lyrics Toolbar (Source Pill, Translate, Romanize, Offset, Sources Priority)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
             // Active Provider Chip
             val sourceLabel = when {
                 isLoadingLyrics && lines.isEmpty() -> "Mencari lirik..."
@@ -357,6 +362,7 @@ fun BitChordSyncedLyricsPanel(
                 }
             }
         }
+    }
 
         // Main Lyrics Scroll Area
         Box(
@@ -823,7 +829,7 @@ fun LyricsProviderSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = Color(0xFF14151C),
+        containerColor = Color(0xFF161618),
         contentColor = TextPrimaryWhite,
     ) {
         Column(
@@ -832,78 +838,14 @@ fun LyricsProviderSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 24.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Sumber Lirik BitChord",
-                        fontFamily = PlusJakartaSans,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 19.sp,
-                        color = Color.White,
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = if (isEmbeddedLyrics) {
-                            "Menggunakan lirik offline yang tertanam (.lrc / tag)"
-                        } else {
-                            "Pilih manual atau atur prioritas otomatis dari 15+ provider"
-                        },
-                        fontFamily = PlusJakartaSans,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.5.sp,
-                        color = TextSecondaryGrey,
-                    )
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = {
-                        onDismiss()
-                        onOpenOffsetSheet()
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            tint = AccentCoral,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Offset",
-                            fontFamily = PlusJakartaSans,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = AccentCoral,
-                        )
-                    }
-                    TextButton(onClick = {
-                        onDismiss()
-                        onOpenSourcesDialog()
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = null,
-                            tint = AccentCoral,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Prioritas",
-                            fontFamily = PlusJakartaSans,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = AccentCoral,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-            HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
-            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Pilih penyedia lirik",
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 18.5.sp,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 14.dp)
+            )
 
             val displayedSources = remember(orderedSources, enabledSources) {
                 val activeList = orderedSources.filter { it in enabledSources }
@@ -914,39 +856,29 @@ fun LyricsProviderSheet(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 420.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+                    .heightIn(max = 440.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 itemsIndexed(
                     items = displayedSources,
                     key = { _, src -> src.name },
                 ) { _, source ->
                     val isSelected = activeSource == source
-                    val isEnabled = source in enabledSources
                     val state = providerStates[source] ?: LyricsProviderState.NOT_FETCHED
-                    val lines = providerResults[source]
-                    val syncTypeLabel = when {
-                        lines == null -> null
-                        lines.any { l -> l.words.any { it.syllables.isNotEmpty() } } -> "Syllable TTML"
-                        lines.any { it.isWordSynced } -> "Word-Sync"
-                        lines.any { it.timeMs > 0L } -> "Synced LRC"
-                        lines.isNotEmpty() -> "Plain"
-                        else -> null
+                    val isNotFound = state == LyricsProviderState.NOT_FOUND
+
+                    val subtitleText = when {
+                        isSelected -> "Penyedia saat ini"
+                        isNotFound -> "Lirik tidak ditemukan"
+                        state == LyricsProviderState.FETCHING -> "Mengambil lirik..."
+                        else -> "Ketuk untuk mengambil"
                     }
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(
-                                if (isSelected) AccentCoral.copy(alpha = 0.16f)
-                                else Color.White.copy(alpha = 0.04f)
-                            )
-                            .border(
-                                width = if (isSelected) 1.2.dp else 0.8.dp,
-                                color = if (isSelected) AccentCoral else Color.White.copy(alpha = 0.07f),
-                                shape = RoundedCornerShape(14.dp),
-                            )
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFF222224))
                             .clickable {
                                 onSelectSource(source)
                                 onDismiss()
@@ -954,91 +886,71 @@ fun LyricsProviderSheet(
                             .padding(horizontal = 14.dp, vertical = 12.dp)
                             .testTag("lyrics_provider_option_${source.name.lowercase()}"),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = source.displayName,
-                                    fontFamily = PlusJakartaSans,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 15.sp,
-                                    color = if (isEnabled) Color.White else Color.White.copy(alpha = 0.55f),
-                                )
-                                if (syncTypeLabel != null) {
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(50))
-                                            .background(FoundGreen.copy(alpha = 0.18f))
-                                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                                    ) {
-                                        Text(
-                                            text = syncTypeLabel,
-                                            fontFamily = PlusJakartaSans,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 10.sp,
-                                            color = FoundGreen,
-                                        )
-                                    }
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF333336)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when {
+                                state == LyricsProviderState.FETCHING -> {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        strokeWidth = 2.dp,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                isSelected -> {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Penyedia saat ini",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                isNotFound -> {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Tidak ditemukan",
+                                        tint = Color.White.copy(alpha = 0.65f),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                else -> {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "Ambil lirik",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = source.subtitle,
-                                fontFamily = PlusJakartaSans,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 12.sp,
-                                color = TextSecondaryGrey,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
                         }
 
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(14.dp))
 
-                        when {
-                            state == LyricsProviderState.FETCHING -> {
-                                CircularProgressIndicator(
-                                    color = AccentCoral,
-                                    strokeWidth = 2.dp,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                            isSelected -> {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Aktif",
-                                    tint = AccentCoral,
-                                    modifier = Modifier.size(22.dp),
-                                )
-                            }
-                            state == LyricsProviderState.FOUND -> {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Tersedia",
-                                    tint = FoundGreen,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-                            state == LyricsProviderState.NOT_FOUND -> {
-                                Text(
-                                    text = "Kosong",
-                                    fontFamily = PlusJakartaSans,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.38f),
-                                )
-                            }
-                            else -> {
-                                Text(
-                                    text = "Ketuk",
-                                    fontFamily = PlusJakartaSans,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.52f),
-                                )
-                            }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = source.displayName,
+                                fontFamily = PlusJakartaSans,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = Color.White,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = subtitleText,
+                                fontFamily = PlusJakartaSans,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 12.5.sp,
+                                color = Color.White.copy(alpha = 0.62f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
@@ -1383,82 +1295,115 @@ fun LyricsOffsetSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Pengaturan Offset Waktu Lirik",
+                text = "Lyrics offset",
                 fontFamily = PlusJakartaSans,
                 fontWeight = FontWeight.ExtraBold,
-                fontSize = 18.5.sp,
+                fontSize = 20.sp,
                 color = Color.White,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Sesuaikan ketepatan waktu lirik terhadap ketukan lagu (-5.0s s/d +5.0s)",
+                text = "Positive values show lyrics later",
                 fontFamily = PlusJakartaSans,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 12.5.sp,
+                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp,
                 color = TextSecondaryGrey,
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             val sec = snappedOffset / 1000f
-            Text(
-                text = if (snappedOffset == 0) "0.0s (Tepat Waktu)" else "%+.1fs (%+d ms)".format(sec, snappedOffset),
-                fontFamily = PlusJakartaSans,
-                fontWeight = FontWeight.Black,
-                fontSize = 24.sp,
-                color = if (snappedOffset == 0) Color.White else AccentCoral,
-            )
+            val formattedSec = String.format(java.util.Locale.GERMANY, "%.1f", sec)
+            val offsetDisplayText = "$formattedSec s"
 
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Slider(
-                value = snappedOffset.toFloat(),
-                onValueChange = { raw ->
-                    val stepped = ((raw / 100f).roundToInt() * 100).coerceIn(-5000, 5000)
-                    onChangeOffsetMs(stepped)
-                },
-                valueRange = -5000f..5000f,
-                steps = 99,
-                colors = SliderDefaults.colors(
-                    thumbColor = AccentCoral,
-                    activeTrackColor = AccentCoral,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.2f),
-                ),
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF222021))
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
             ) {
-                OffsetStepButton(
-                    label = "-0.5s",
-                    onClick = { onChangeOffsetMs((snappedOffset - 500).coerceIn(-5000, 5000)) },
-                    modifier = Modifier.weight(1f),
-                )
-                OffsetStepButton(
-                    label = "-0.1s",
-                    onClick = { onChangeOffsetMs((snappedOffset - 100).coerceIn(-5000, 5000)) },
-                    modifier = Modifier.weight(1f),
-                )
-                OffsetStepButton(
-                    label = "Reset",
-                    isPrimary = snappedOffset != 0,
-                    onClick = { onChangeOffsetMs(0) },
-                    modifier = Modifier.weight(1f),
-                )
-                OffsetStepButton(
-                    label = "+0.1s",
-                    onClick = { onChangeOffsetMs((snappedOffset + 100).coerceIn(-5000, 5000)) },
-                    modifier = Modifier.weight(1f),
-                )
-                OffsetStepButton(
-                    label = "+0.5s",
-                    onClick = { onChangeOffsetMs((snappedOffset + 500).coerceIn(-5000, 5000)) },
-                    modifier = Modifier.weight(1f),
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = offsetDisplayText,
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 32.sp,
+                        color = Color.White,
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        IconButton(
+                            onClick = {
+                                val next = (snappedOffset - 500).coerceIn(-5000, 5000)
+                                onChangeOffsetMs(next)
+                            },
+                            modifier = Modifier.size(42.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Remove,
+                                contentDescription = "Kurangi offset",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+
+                        Slider(
+                            value = snappedOffset.toFloat(),
+                            onValueChange = { raw ->
+                                val stepped = ((raw / 100f).roundToInt() * 100).coerceIn(-5000, 5000)
+                                onChangeOffsetMs(stepped)
+                            },
+                            valueRange = -5000f..5000f,
+                            steps = 99,
+                            colors = SliderDefaults.colors(
+                                thumbColor = AccentCoral,
+                                activeTrackColor = AccentCoral,
+                                inactiveTrackColor = Color.White.copy(alpha = 0.2f),
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+
+                        IconButton(
+                            onClick = {
+                                val next = (snappedOffset + 500).coerceIn(-5000, 5000)
+                                onChangeOffsetMs(next)
+                            },
+                            modifier = Modifier.size(42.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Tambah offset",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            TextButton(
+                onClick = { onChangeOffsetMs(0) },
+                modifier = Modifier.testTag("lyrics_offset_reset_button"),
+            ) {
+                Text(
+                    text = "Reset",
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = AccentCoral,
                 )
             }
         }

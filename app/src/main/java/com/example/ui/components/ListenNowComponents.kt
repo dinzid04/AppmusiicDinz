@@ -41,14 +41,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.data.settings.AppSettings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -191,6 +195,7 @@ fun PintasanCepatGridSection(
     modifier: Modifier = Modifier
 ) {
     if (items.isEmpty()) return
+    val isRedesign by AppSettings.quickPicksRedesignEnabled.collectAsStateWithLifecycle()
     val pages = remember(items) { items.chunked(9).take(3) }
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val firstThumb = items.firstOrNull()?.smallThumbnail.orEmpty()
@@ -202,63 +207,85 @@ fun PintasanCepatGridSection(
             .padding(top = 4.dp, bottom = 18.dp)
             .testTag("pintasan_cepat_section")
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onExpandAllClick)
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        if (isRedesign) {
+            Text(
+                text = "Panggilan cepat",
+                fontFamily = PlusJakartaSans,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 22.sp,
+                letterSpacing = (-0.5).sp,
+                color = TextPrimaryWhite,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+            )
+        } else {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onExpandAllClick)
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                val headerIconReq = remember(context, firstThumb) {
-                    ImageRequest.Builder(context)
-                        .data(firstThumb)
-                        .size(72, 72)
-                        .allowHardware(true)
-                        .crossfade(false)
-                        .build()
-                }
-                AsyncImage(
-                    model = headerIconReq,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(CardPlaceholderDark)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val headerIconReq = remember(context, firstThumb) {
+                        ImageRequest.Builder(context)
+                            .data(firstThumb)
+                            .size(72, 72)
+                            .allowHardware(true)
+                            .crossfade(false)
+                            .build()
+                    }
+                    AsyncImage(
+                        model = headerIconReq,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(CardPlaceholderDark)
+                    )
 
-                Text(
-                    text = "Pintasan cepat",
-                    fontFamily = PlusJakartaSans,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 22.sp,
-                    letterSpacing = (-0.5).sp,
-                    color = TextPrimaryWhite
+                    Text(
+                        text = "Pintasan cepat",
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 22.sp,
+                        letterSpacing = (-0.5).sp,
+                        color = TextPrimaryWhite
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Lihat Semua Pintasan Cepat",
+                    tint = TextPrimaryWhite,
+                    modifier = Modifier.size(24.dp)
                 )
             }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Lihat Semua Pintasan Cepat",
-                tint = TextPrimaryWhite,
-                modifier = Modifier.size(24.dp)
-            )
         }
 
         Spacer(modifier = Modifier.height(6.dp))
 
         val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
-        val cellSize = remember(screenWidthDp) {
-            ((screenWidthDp - 48.dp) / 3f).coerceIn(96.dp, 134.dp)
+        val cellSize = remember(screenWidthDp, isRedesign) {
+            if (isRedesign) {
+                ((screenWidthDp - 48.dp) / 3f).coerceIn(100.dp, 140.dp)
+            } else {
+                ((screenWidthDp - 48.dp) / 3f).coerceIn(96.dp, 134.dp)
+            }
         }
         val firstPageRows = pages.firstOrNull()?.chunked(3)?.size ?: 1
-        val gridHeight = remember(cellSize, firstPageRows) {
-            (cellSize * firstPageRows) + (8.dp * (firstPageRows - 1).coerceAtLeast(0))
+        val gridHeight = remember(cellSize, firstPageRows, isRedesign) {
+            if (isRedesign) {
+                ((cellSize + 24.dp) * firstPageRows) + (10.dp * (firstPageRows - 1).coerceAtLeast(0))
+            } else {
+                (cellSize * firstPageRows) + (8.dp * (firstPageRows - 1).coerceAtLeast(0))
+            }
         }
 
         HorizontalPager(
@@ -274,25 +301,33 @@ fun PintasanCepatGridSection(
 
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(if (isRedesign) 10.dp else 8.dp)
             ) {
                 rows.forEach { rowItems ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(cellSize),
+                            .height(if (isRedesign) cellSize + 24.dp else cellSize),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         for (colIdx in 0 until 3) {
                             val item = rowItems.getOrNull(colIdx)
                             if (item != null) {
-                                PintasanCepatCard(
-                                    item = item,
-                                    onClick = { onItemClick(item) },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                )
+                                if (isRedesign) {
+                                    PintasanCepatRedesignCard(
+                                        item = item,
+                                        onClick = { onItemClick(item) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                } else {
+                                    PintasanCepatCard(
+                                        item = item,
+                                        onClick = { onItemClick(item) },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f)
+                                    )
+                                }
                             } else {
                                 Spacer(
                                     modifier = Modifier
@@ -315,18 +350,87 @@ fun PintasanCepatGridSection(
             ) {
                 repeat(pages.size) { idx ->
                     val isSelected = pagerState.currentPage == idx
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 3.dp)
-                            .size(if (isSelected) 7.dp else 6.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (isSelected) Color.White else Color.White.copy(alpha = 0.28f)
+                    if (isRedesign) {
+                        if (isSelected) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 3.dp)
+                                    .size(width = 22.dp, height = 4.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color.White)
                             )
-                    )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 3.dp)
+                                    .size(4.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.35f))
+                            )
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 3.dp)
+                                .size(if (isSelected) 7.dp else 6.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected) Color.White else Color.White.copy(alpha = 0.28f)
+                                )
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PintasanCepatRedesignCard(
+    item: MusicItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val imageRequest = remember(context, item.smallThumbnail) {
+        ImageRequest.Builder(context)
+            .data(item.smallThumbnail)
+            .size(240, 240)
+            .allowHardware(true)
+            .crossfade(false)
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .build()
+    }
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .testTag("shortcut_card_${item.id}"),
+        horizontalAlignment = Alignment.Start
+    ) {
+        AsyncImage(
+            model = imageRequest,
+            contentDescription = item.title,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(14.dp))
+                .background(CardPlaceholderDark)
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        Text(
+            text = item.title,
+            fontFamily = PlusJakartaSans,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            lineHeight = 14.sp,
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -600,7 +704,21 @@ private fun SectionHeaderWithPlayAll(
 
         if (showPlayAll) {
             Spacer(modifier = Modifier.width(12.dp))
-            if (showArrowOnPlayAll) {
+            val isHomeRedesign by AppSettings.homeRedesignSectionsEnabled.collectAsStateWithLifecycle()
+            if (isHomeRedesign) {
+                Text(
+                    text = "PUTAR SEMUA",
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.5.sp,
+                    letterSpacing = 0.5.sp,
+                    color = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .clickable(onClick = onPlayAllClick)
+                        .padding(horizontal = 4.dp, vertical = 6.dp)
+                        .testTag("play_all_${title.lowercase().replace(" ", "_")}")
+                )
+            } else if (showArrowOnPlayAll) {
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
@@ -980,6 +1098,8 @@ fun CommunityPlaylistCardsSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        val isCommunityRedesign by AppSettings.communitySectionRedesignEnabled.collectAsStateWithLifecycle()
+
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -993,24 +1113,288 @@ fun CommunityPlaylistCardsSection(
                 val bgTint = cardPalettes[idx % cardPalettes.size]
                 val isSaved = savedPlaylistIds.contains(playlistItem.id)
 
-                CommunityPlaylistPreviewCard(
-                    playlistItem = playlistItem,
-                    cardWidth = cardWidth,
-                    cardBackground = bgTint,
-                    isSaved = isSaved,
-                    onOpenPlaylist = { onOpenPlaylist(playlistItem) },
-                    onPlayPreviewTrack = { track ->
-                        onPlayPreviewTrack(
-                            track,
-                            playlistItem.previewTracks,
-                            "Playing from ${playlistItem.title}"
-                        )
-                    },
-                    onPlayFirstTrack = { onPlayPlaylistFirstTrack(playlistItem) },
-                    onStartRadio = { onStartPlaylistRadio(playlistItem) },
-                    onToggleSave = { onToggleSavePlaylist(playlistItem) },
-                    onTrackMenuClick = onTrackMenuClick
+                if (isCommunityRedesign) {
+                    CommunityPlaylistRedesignCard(
+                        playlistItem = playlistItem,
+                        isSaved = isSaved,
+                        onOpenPlaylist = { onOpenPlaylist(playlistItem) },
+                        onPlayPreviewTrack = { track ->
+                            onPlayPreviewTrack(
+                                track,
+                                playlistItem.previewTracks,
+                                "Playing from ${playlistItem.title}"
+                            )
+                        },
+                        onPlayFirstTrack = { onPlayPlaylistFirstTrack(playlistItem) },
+                        onStartRadio = { onStartPlaylistRadio(playlistItem) },
+                        onToggleSave = { onToggleSavePlaylist(playlistItem) }
+                    )
+                } else {
+                    CommunityPlaylistPreviewCard(
+                        playlistItem = playlistItem,
+                        cardWidth = cardWidth,
+                        cardBackground = bgTint,
+                        isSaved = isSaved,
+                        onOpenPlaylist = { onOpenPlaylist(playlistItem) },
+                        onPlayPreviewTrack = { track ->
+                            onPlayPreviewTrack(
+                                track,
+                                playlistItem.previewTracks,
+                                "Playing from ${playlistItem.title}"
+                            )
+                        },
+                        onPlayFirstTrack = { onPlayPlaylistFirstTrack(playlistItem) },
+                        onStartRadio = { onStartPlaylistRadio(playlistItem) },
+                        onToggleSave = { onToggleSavePlaylist(playlistItem) },
+                        onTrackMenuClick = onTrackMenuClick
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommunityPlaylistRedesignCard(
+    playlistItem: MusicItem,
+    isSaved: Boolean,
+    onOpenPlaylist: () -> Unit,
+    onPlayPreviewTrack: (MusicItem) -> Unit,
+    onPlayFirstTrack: () -> Unit,
+    onStartRadio: () -> Unit,
+    onToggleSave: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val previewTracks = remember(playlistItem.previewTracks) {
+        playlistItem.previewTracks.take(3)
+    }
+
+    Column(
+        modifier = modifier
+            .width(268.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color(0xFF222021))
+            .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(22.dp))
+            .padding(14.dp)
+            .testTag("community_playlist_card_${playlistItem.id}")
+    ) {
+        // Top Header: 2x2 Collage Artwork on Left + Creator & Title on Right
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onOpenPlaylist),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(68.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CardPlaceholderDark)
+            ) {
+                if (playlistItem.previewTracks.size >= 4) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(modifier = Modifier.weight(1f)) {
+                            AsyncImage(
+                                model = playlistItem.previewTracks[0].smallThumbnail,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                            AsyncImage(
+                                model = playlistItem.previewTracks[1].smallThumbnail,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                        }
+                        Row(modifier = Modifier.weight(1f)) {
+                            AsyncImage(
+                                model = playlistItem.previewTracks[2].smallThumbnail,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                            AsyncImage(
+                                model = playlistItem.previewTracks[3].smallThumbnail,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                        }
+                    }
+                } else {
+                    AsyncImage(
+                        model = playlistItem.highResThumbnail,
+                        contentDescription = playlistItem.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = playlistItem.subtitle.ifBlank { "ROSSA OFFICIAL" }.uppercase(),
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.62f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = playlistItem.title,
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 15.5.sp,
+                    lineHeight = 19.sp,
+                    letterSpacing = (-0.2).sp,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        HorizontalDivider(
+            color = Color.White.copy(alpha = 0.08f),
+            thickness = 0.8.dp,
+            modifier = Modifier.padding(vertical = 11.dp)
+        )
+
+        // Middle: 3 Numbered Tracks
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            previewTracks.forEachIndexed { idx, track ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onPlayPreviewTrack(track) }
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${idx + 1}",
+                        fontFamily = PlusJakartaSans,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.45f),
+                        modifier = Modifier.width(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    AsyncImage(
+                        model = track.smallThumbnail,
+                        contentDescription = track.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(CardPlaceholderDark)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = track.title,
+                            fontFamily = PlusJakartaSans,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = track.cleanArtist,
+                            fontFamily = PlusJakartaSans,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Bottom Action Bar: Pill "PUTAR" + Circle Radio + Circle Save
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(Color(0xFFB5C8A8))
+                    .clickable(onClick = onPlayFirstTrack)
+                    .padding(horizontal = 22.dp, vertical = 9.dp)
+                    .testTag("community_play_btn_${playlistItem.id}"),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = "Putar",
+                    tint = Color.Black,
+                    modifier = Modifier.size(19.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "PUTAR",
+                    fontFamily = PlusJakartaSans,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 12.5.sp,
+                    color = Color.Black
+                )
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.12f))
+                        .clickable(onClick = onStartRadio),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Sensors,
+                        contentDescription = "Radio",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.12f))
+                        .clickable(onClick = onToggleSave),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Filled.Add,
+                        contentDescription = "Simpan",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }

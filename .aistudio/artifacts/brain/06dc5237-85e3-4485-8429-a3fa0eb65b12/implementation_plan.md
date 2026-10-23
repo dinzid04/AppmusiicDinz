@@ -1,43 +1,82 @@
-# Rencana Perbaikan Force Close Saat Aplikasi Dibuka & Default Liquid Glass OFF
+# Implementation Plan: Home & Lyrics UI Redesign with Settings Toggles
 
-Berdasarkan investigasi kode pada alur peluncuran utama (`MainActivity`, `AppSettings`, `ListenNowScreen`, dan `YtMusicScraper`), ditemukan **3 penyebab utama** mengapa aplikasi langsung mengalami *force close* saat dibuka di halaman utama:
-
-1. **Efek Shader AGSL `LiquidGlass` Aktif Secara Default Saat Pertama Kali Dibuka**:
-   - Di `AppSettings.kt`, nilai awal `_liquidGlass` diatur ke `isLiquidGlassSupported` (`true` pada Android 13+ / emulator preview). Akibatnya, sejak frame pertama aplikasi dibuka, seluruh halaman utama dibungkus oleh `layerBackdrop(navBackdrop)` dan merender `GlassNavBar` menggunakan shader AGSL `RuntimeShader` (`refractionWithDispersion`, `blur`, dan `colorControls`) yang membebani/memicu crash pipeline grafis emulator saat inisialisasi layer.
-2. **Duplikasi Key pada `LazyColumn` dan `LazyRow` di Halaman Utama (`IllegalArgumentException: Key "..." was already used`)**:
-   - Di `ListenNowScreen.kt` dan `ListenNowComponents.kt`, daftar rak (*shelves*) dan lagu dari YouTube Music menggunakan `key = { "section_${section.id}" }` atau `key = { "${section.id}_${item.id}" }` tanpa indeks. Ketika `YtMusicScraper` mengembalikan dua seksi dengan judul serupa atau item lagu yang muncul lebih dari sekali di dalam rak yang sama, Jetpack Compose langsung melempar `IllegalArgumentException` dan membuat aplikasi *force close* seketika di halaman utama.
-3. **Potensi *Race Condition* Inisialisasi `SharedPreferences` (`UninitializedPropertyAccessException: lateinit property prefs has not been initialized`)**:
-   - `AppSettings.init()`, `AuthStore.init()`, dan `RemoteArtworkStore.init()` sebelumnya baru dipanggil di dalam `MusicHomeViewModel.init`, bukan di awal `MainActivity.onCreate()` sebelum UI Compose dirender. Selain itu, beberapa fungsi di `AuthStore` dan `RemoteArtworkStore` mengakses `prefs` tanpa pengecekan `::prefs.isInitialized`.
+Berdasarkan analisis tangkapan layar referensi (`Screenshot_20261023_*`) dan jawaban preferensi Anda, berikut adalah rencana lengkap untuk merombak tata letak Beranda dan Halaman Lirik, dengan opsi sakelar tampilan mandiri di menu Pengaturan Tampilan (Settings > Appearance).
 
 ---
 
-## Perubahan yang Akan Dilakukan
+## 1. Perubahan Tata Letak Beranda (Home Screen)
 
-### 1. Mengubah Default `LiquidGlass` Menjadi `OFF` (`false`) & Menambahkan Pengaman Shader
-- **`app/src/main/java/com/example/data/settings/AppSettings.kt`**:
-  - Mengubah nilai default `_liquidGlass` dari `MutableStateFlow(isLiquidGlassSupported)` menjadi `MutableStateFlow(false)`.
-  - Mengubah pembacaan preferensi di `init()` menjadi `prefs.getBoolean("liquid_glass", false) && isLiquidGlassSupported`, sehingga efek Liquid Glass **selalu nonaktif (`OFF`) secara default** dan hanya aktif apabila pengguna menyalakannya sendiri melalui menu **Settings**.
-- **`app/src/main/java/com/example/ui/liquidglass/backdrop/DrawBackdropModifier.kt` & `GlassSelectionPill.kt`**:
-  - Menambahkan pengaman (`runCatching`) pada eksekusi `RuntimeShader` dan perekaman `GraphicsLayer` agar jika pengguna mengaktifkan Liquid Glass secara manual di perangkat/emulator tertentu, kegagalan kompilasi shader tidak akan menyebabkan *force close*.
+### A. Pintasan Cepat (Quick Shortcuts)
+- **Desain Baru (Sesuai `Screenshot_20261023_094346_Auralys_bbc82374.jpg`)**:
+  - Format grid terstruktur 3 kolom x 3 baris per halaman kartu.
+  - Gambar thumbnail kotak dengan rounded corner presisi, judul lagu tebal, dan nama artis di bawahnya.
+  - Indikator halaman titik (dot page indicator) di bawah grid untuk navigasi halaman pintasan yang rapi dan tidak berantakan.
+- **Dukungan Toggle**: Dapat dialihkan antara layout baru 3x3 atau layout default horizontal list.
 
-### 2. Mencegah Crash *Duplicate Key* di Halaman Utama & Seluruh Carousel
-- **`app/src/main/java/com/example/ui/home/ListenNowScreen.kt`**:
-  - Mengubah `items(items = uiState.carouselSections, key = ...)` menjadi `itemsIndexed` dengan key unik berbasis indeks (`"section_${idx}_${section.id}"`).
-- **`app/src/main/java/com/example/ui/components/ListenNowComponents.kt`**:
-  - Mengubah seluruh `LazyRow` (`FavoritesForeverRow`, `RockClassicsRow`, `DynamicCarouselSection`, dll.) agar menggunakan `itemsIndexed` dengan key `"${section.id}_${idx}_${item.id}"` sehingga lagu atau album yang muncul ganda dari API tidak pernah memicu crash Compose.
-- **`app/src/main/java/com/example/data/ytmusic/YtMusicScraper.kt`**:
-  - Memastikan setiap `HomeSection` yang di-parse memiliki `id` unik dengan menyertakan indeks seksi jika terdapat judul rak yang sama.
-- **`app/src/main/java/com/example/ui/components/ShelfRow.kt`, `ExploreScreen.kt`, `SearchPlaceholderScreen.kt`, & `ArtistProfileScreen.kt`**:
-  - Menyeragamkan penggunaan `itemsIndexed` pada daftar horizontal/vertikal untuk mencegah crash serupa saat berpindah tab.
+### B. Bagian Rekomendasi Beranda ("Pilihan Cepat", "Cover dan Remix", "Lagu Trending Untuk Kamu")
+- **Desain Baru (Sesuai `Screenshot_20261023_095215_Auralys_1912bead.jpg`)**:
+  - Kolom vertikal berisi 4 lagu per halaman geser, dengan thumbnail persegi, judul, artis/detail rilis, dan tombol menu opsi 3-titik di sisi kanan setiap item.
+  - **Tombol "PUTAR SEMUA"**:
+    - Format teks murni tanpa latar belakang pil/overlay (clean uppercase text).
+    - **Fungsi Pemutaran**: Memutar langsung lagu pertama di kategori tersebut, dan secara otomatis memasukkan sisa lagu dalam daftar tersebut ke antrean berikutnya (next in queue) secara berurutan.
+- **Dukungan Toggle**: Tersedia opsi toggle terpisah di Pengaturan untuk mengaktifkan/menonaktifkan desain baru ini.
 
-### 3. Inisialisasi Lebih Awal di `MainActivity.onCreate()` & Guard `SharedPreferences`
-- **`app/src/main/java/com/example/MainActivity.kt`**:
-  - Memanggil `AppSettings.init(applicationContext)`, `AuthStore.init(applicationContext)`, dan `RemoteArtworkStore.init(applicationContext)` di baris paling atas `onCreate()` sebelum `setContent` dijalankan.
-- **`app/src/main/java/com/example/data/auth/AuthStore.kt` & `app/src/main/java/com/example/data/RemoteArtworkStore.kt`**:
-  - Menambahkan pengecekan `if (!::prefs.isInitialized) return` sebelum setiap operasi `prefs.edit()` dan pembacaan state.
+### C. Bagian "Dari Komunitas" (Community Playlist Shelf)
+- **Desain Baru (Sesuai `Screenshot_20261023_100118_Auralys_5823218e.jpg`)**:
+  - Kartu kontainer bergradasi lembut dengan artwork kolase 2x2 di bagian atas, judul playlist tebal, dan nama kurator/pembuat.
+  - Daftar 3 lagu teratas berpenomoran urut (1, 2, 3) lengkap dengan artwork mini, judul lagu, dan artis.
+  - Baris aksi bawah (bottom action row):
+    - Tombol `PUTAR` (ikon Play + teks).
+    - Tombol radio `((o))` untuk memulai stasiun radio berdasarkan playlist.
+    - Tombol simpan/tambah `(+)` untuk menyimpan playlist ke pustaka.
+- **Dukungan Toggle**: Dapat diaktifkan atau dikembalikan ke format default melalui Pengaturan.
 
 ---
 
-## Rencana Verifikasi
-1. **Kompilasi Aplikasi**: Menjalankan `compile_applet` untuk memastikan seluruh perubahan kode dikompilasi tanpa error.
-2. **Pengujian Peluncuran Halaman Utama (Robolectric JVM Test)**: Menjalankan pengujian unit/Robolectric (`gradle :app:testDebugUnitTest`) yang membuka `MainActivity`, memverifikasi halaman utama (`ListenNowScreen`) tampil tanpa *force close*, serta memastikan status default `AppSettings.liquidGlass.value` adalah `false`.
+## 2. Pengaturan Tampilan (Settings > Appearance)
+
+Penambahan 3 sakelar mandiri (independent toggle switches) yang disimpan secara persisten di `AppSettings`:
+1. **Tampilan Desain "Dari Komunitas"**: Mengaktifkan tampilan kartu kolase 2x2 + daftar bernomor vs tampilan default.
+2. **Tampilan Desain "Pintasan Cepat"**: Mengaktifkan tampilan grid 3x3 rapi vs tampilan default.
+3. **Tampilan Desain "Beranda & Rekomendasi"**: Mengaktifkan layout 4-item dengan teks PUTAR SEMUA vs tampilan default.
+
+---
+
+## 3. Redesign Halaman Lirik (Lyrics Screen)
+
+### A. Header Minimalis (Sesuai `Screenshot_20261023_101030_BitChord_e9e68f01.jpg` & `Screenshot_20261023_101144_BitChord_8a70e124.jpg`)
+- Bagian atas hanya menampilkan:
+  - Thumbnail lagu (persegi berujung tumpul).
+  - Judul lagu & nama artis di sampingnya.
+  - Tombol favorit (hati / love).
+  - Tombol menu 3-titik (menampung fitur-fitur tambahan seperti Sleep Timer, Audio Quality, dsb.).
+
+### B. Bar Kontrol Lirik Bawah
+- Ikon bola dunia (Globe) untuk mengaktifkan/menonaktifkan mode teks Romaji (romanisasi kanji/karakter).
+- Ikon terjemahan (Translate) untuk beralih bahasa terjemahan lirik.
+- Teks `"Lirik oleh [Nama Provider]"` yang dapat diklik untuk membuka lembar pemilihan penyedia lirik (*Provider Selector*).
+
+### C. Modal "Pilih Penyedia Lirik" (Sesuai `Screenshot_20261023_101818_BitChord_216a3ead.jpg`)
+- Tampilan bottom sheet terorganisir dengan status ikon untuk masing-masing penyedia:
+  - Ikon centang hijau/aktif untuk penyedia yang sedang aktif digunakan.
+  - Ikon kaca pembesar (search) untuk penyedia yang tersedia dicari liriknya.
+  - Ikon silang (x) untuk penyedia yang tidak menemukan lirik untuk lagu saat ini.
+
+### D. Modal "Lyrics Offset" (Sesuai `Screenshot_20261023_101809_BitChord_baba1885.jpg`)
+- Judul *"Lyrics offset"* dengan subjudul *"Positive values show lyrics later"*.
+- Angka nilai offset besar di tengah (contoh: `0,0 s` atau `-1,5 s`).
+- Slider offset interaktif diapit oleh tombol langkah `-` dan `+`.
+- Tombol *"Reset"* di bagian bawah untuk mengembalikan offset ke 0 detik.
+
+---
+
+## 4. Tipografi SF Pro Display
+- Penggunaan tipografi sans-serif modern berbobot bold (SF Pro Display style) untuk semua judul header, lirik lagu, teks tombol PUTAR SEMUA, dan label provider secara konsisten dan aman tanpa risiko crash binary font.
+
+---
+
+## 5. Rencana Pengujian & Verifikasi
+1. Verifikasi kompilasi build Android melalui `compile_applet`.
+2. Validasi persistensi sakelar Settings saat diubah On/Off.
+3. Uji fungsi antrean tombol teks "PUTAR SEMUA" untuk memastikan lagu langsung diputar dan sisa antrean tersusun rapi.
+4. Uji interaksi pemilihan penyedia lirik dan slider lirik offset.

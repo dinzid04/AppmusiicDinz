@@ -190,6 +190,9 @@ fun BitChordSettingsScreen(
     val lyricsBlur by AppSettings.lyricsBlur.collectAsStateWithLifecycle()
     val animatedCanvas by AppSettings.animatedCanvas.collectAsStateWithLifecycle()
     val canvasOverCellular by AppSettings.canvasOverCellular.collectAsStateWithLifecycle()
+    val communitySectionRedesignEnabled by AppSettings.communitySectionRedesignEnabled.collectAsStateWithLifecycle()
+    val quickPicksRedesignEnabled by AppSettings.quickPicksRedesignEnabled.collectAsStateWithLifecycle()
+    val homeRedesignSectionsEnabled by AppSettings.homeRedesignSectionsEnabled.collectAsStateWithLifecycle()
     val signatureApiEnabled by AppSettings.signatureApiEnabled.collectAsStateWithLifecycle()
     val signatureApiUrl by AppSettings.signatureApiUrl.collectAsStateWithLifecycle()
     val fullBleedArtwork by AppSettings.fullBleedArtwork.collectAsStateWithLifecycle()
@@ -774,6 +777,57 @@ fun BitChordSettingsScreen(
                         Chevron()
                     }
                 }
+            }
+            val communityRedesignTitle = "Tampilan Desain \"Dari Komunitas\""
+            row(communityRedesignTitle, "komunitas", "community", "playlist", "desain") {
+                SettingsRow(
+                    icon = Icons.Rounded.Groups,
+                    title = communityRedesignTitle,
+                    subtitle = "Desain kartu kolase 2x2, daftar bernomor 1-3, dan tombol aksi PUTAR",
+                    trailing = {
+                        Switch(
+                            checked = communitySectionRedesignEnabled,
+                            onCheckedChange = AppSettings::setCommunitySectionRedesignEnabled,
+                            colors = switchColors,
+                            modifier = Modifier.testTag("community_redesign_toggle"),
+                        )
+                    },
+                    onClick = { AppSettings.setCommunitySectionRedesignEnabled(!communitySectionRedesignEnabled) },
+                )
+            }
+            val quickPicksRedesignTitle = "Tampilan Desain \"Pintasan Cepat\""
+            row(quickPicksRedesignTitle, "pintasan", "cepat", "grid", "desain") {
+                SettingsRow(
+                    icon = Icons.Rounded.AutoAwesome,
+                    title = quickPicksRedesignTitle,
+                    subtitle = "Format grid 3x3 rapi dengan teks judul di bawah dan indikator halaman titik",
+                    trailing = {
+                        Switch(
+                            checked = quickPicksRedesignEnabled,
+                            onCheckedChange = AppSettings::setQuickPicksRedesignEnabled,
+                            colors = switchColors,
+                            modifier = Modifier.testTag("quick_picks_redesign_toggle"),
+                        )
+                    },
+                    onClick = { AppSettings.setQuickPicksRedesignEnabled(!quickPicksRedesignEnabled) },
+                )
+            }
+            val homeRedesignTitle = "Tampilan Desain \"Beranda & Rekomendasi\""
+            row(homeRedesignTitle, "beranda", "pilihan cepat", "trending", "cover", "putar semua") {
+                SettingsRow(
+                    icon = Icons.Rounded.PlaylistPlay,
+                    title = homeRedesignTitle,
+                    subtitle = "Layout 4 baris rapi dan tombol teks PUTAR SEMUA (memutar & memasukkan ke antrean)",
+                    trailing = {
+                        Switch(
+                            checked = homeRedesignSectionsEnabled,
+                            onCheckedChange = AppSettings::setHomeRedesignSectionsEnabled,
+                            colors = switchColors,
+                            modifier = Modifier.testTag("home_redesign_sections_toggle"),
+                        )
+                    },
+                    onClick = { AppSettings.setHomeRedesignSectionsEnabled(!homeRedesignSectionsEnabled) },
+                )
             }
             val syncedLyricsTitle = "Synced lyrics"
             row(syncedLyricsTitle, "lyrics", "translation", "lrclib", "musixmatch") {
